@@ -30,7 +30,10 @@ router.post('/mark', authenticate, authorize('coordinator'), async (req, res) =>
     }
 
     // Verify coordinator is assigned to this event
-    if (registration.event_id.coordinator_id?.toString() !== req.user._id.toString()) {
+    const isAssigned = registration.event_id.coordinator_ids?.some(
+      coordId => coordId.toString() === req.user._id.toString()
+    );
+    if (!isAssigned) {
       return res.status(403).json({ message: 'Access denied. You are not assigned to this event' });
     }
 
@@ -79,8 +82,13 @@ router.get('/event/:eventId', authenticate, authorize('coordinator', 'admin'), a
     }
 
     // If coordinator, verify they are assigned to this event
-    if (req.user.role === 'coordinator' && event.coordinator_id?.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Access denied. You are not assigned to this event' });
+    if (req.user.role === 'coordinator') {
+      const isAssigned = event.coordinator_ids?.some(
+        coordId => coordId.toString() === req.user._id.toString()
+      );
+      if (!isAssigned) {
+        return res.status(403).json({ message: 'Access denied. You are not assigned to this event' });
+      }
     }
 
     // Get all registrations for this event

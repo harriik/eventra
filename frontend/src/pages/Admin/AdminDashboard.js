@@ -75,8 +75,8 @@ const AdminDashboard = () => {
               className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition text-center"
             >
               <div className="text-indigo-600 text-4xl mb-4">➕</div>
-              <h3 className="text-xl font-bold mb-2">Create Main Event</h3>
-              <p className="text-gray-600">Create a new symposium event</p>
+              <h3 className="text-xl font-bold mb-2">Create Event</h3>
+              <p className="text-gray-600">Create a new event</p>
             </Link>
             <Link
               to="/admin/events/create-sub"
@@ -130,9 +130,6 @@ const AdminDashboard = () => {
                     <tr key={event._id || event.event_id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{event.title}</div>
-                        {event.main_event && (
-                          <div className="text-sm text-gray-500">{event.main_event}</div>
-                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(event.date).toLocaleDateString()}

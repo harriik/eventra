@@ -23,7 +23,7 @@ import AttendanceStats from './pages/Coordinator/AttendanceStats';
 import AdminLogin from './pages/Admin/AdminLogin';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import CreateEvent from './pages/Admin/CreateEvent';
-import CreateSubEvent from './pages/Admin/CreateSubEvent';
+import EditEvent from './pages/Admin/EditEvent';
 import AdminParticipants from './pages/Admin/AdminParticipants';
 import AdminReports from './pages/Admin/AdminReports';
 
@@ -89,8 +89,8 @@ function App() {
               element={<ProtectedRoute requiredRole="admin"><CreateEvent /></ProtectedRoute>}
             />
             <Route
-              path="/admin/events/create-sub"
-              element={<ProtectedRoute requiredRole="admin"><CreateSubEvent /></ProtectedRoute>}
+              path="/admin/events/edit/:id"
+              element={<ProtectedRoute requiredRole="admin"><EditEvent /></ProtectedRoute>}
             />
             <Route
               path="/admin/participants"

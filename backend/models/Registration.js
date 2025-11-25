@@ -21,6 +21,11 @@ const registrationSchema = new mongoose.Schema({
     unique: true,
     required: true
   },
+  team_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Team',
+    default: null
+  },
   timestamp: {
     type: Date,
     default: Date.now

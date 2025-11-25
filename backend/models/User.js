@@ -35,6 +35,12 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  student_id: {
+    type: String,
+    unique: true,
+    sparse: true, // Only unique when present (for students only)
+    trim: true
+  },
   created_at: {
     type: Date,
     default: Date.now

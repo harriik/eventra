@@ -26,7 +26,7 @@ router.get('/dashboard', async (req, res) => {
     const totalRegistrations = await Registration.countDocuments();
 
     // Get events with participant counts
-    const events = await Event.find().populate('coordinator_id', 'name email');
+    const events = await Event.find().populate('coordinator_ids', 'name email mobile');
     const eventsWithStats = await Promise.all(
       events.map(async (event) => {
         const registrations = await Registration.countDocuments({ event_id: event._id });
@@ -36,14 +36,18 @@ router.get('/dashboard', async (req, res) => {
         const present = attendances.filter(a => a.status === 'Present').length;
         const attendancePercentage = registrations > 0 ? ((present / registrations) * 100).toFixed(2) : 0;
 
+        const coordinators = event.coordinator_ids && event.coordinator_ids.length > 0
+          ? event.coordinator_ids.map(c => c.name).join(', ')
+          : 'Not assigned';
+
         return {
           _id: event._id,
           event_id: event.event_id,
           title: event.title,
           date: event.date,
           venue: event.venue,
-          main_event: event.main_event,
-          coordinator: event.coordinator_id ? event.coordinator_id.name : 'Not assigned',
+          coordinator: coordinators,
+          coordinator_ids: event.coordinator_ids || [],
           participants_count: registrations,
           attendance_percentage: attendancePercentage
         };
@@ -123,7 +127,6 @@ router.get('/events/stats', async (req, res) => {
         return {
           event_id: event.event_id,
           title: event.title,
-          main_event: event.main_event,
           date: event.date,
           venue: event.venue,
           total_registered: total,

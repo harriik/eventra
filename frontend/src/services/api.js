@@ -29,11 +29,12 @@ export const authAPI = {
 export const eventsAPI = {
   getAll: (params) => api.get('/events', { params }),
   getById: (id) => api.get(`/events/${id}`),
-  getByMainEvent: (mainEvent) => api.get(`/events/main/${encodeURIComponent(mainEvent)}`),
   create: (eventData) => api.post('/events', eventData),
-  createSubEvent: (eventData) => api.post('/events/sub-events', eventData),
   update: (id, eventData) => api.put(`/events/${id}`, eventData),
-  delete: (id) => api.delete(`/events/${id}`)
+  delete: (id) => api.delete(`/events/${id}`),
+  assignCoordinators: (id, coordinatorIds) => api.post(`/events/${id}/coordinators`, { coordinator_ids: coordinatorIds }),
+  reassignCoordinators: (id, coordinatorIds) => api.put(`/events/${id}/coordinators`, { coordinator_ids: coordinatorIds }),
+  removeCoordinator: (id, coordinatorId) => api.delete(`/events/${id}/coordinators/${coordinatorId}`)
 };
 
 // Registrations API
@@ -55,6 +56,16 @@ export const adminAPI = {
   getDashboard: () => api.get('/admin/dashboard'),
   getUsers: (params) => api.get('/admin/users', { params }),
   getEventStats: () => api.get('/admin/events/stats')
+};
+
+// Teams API
+export const teamsAPI = {
+  create: (teamData) => api.post('/teams', teamData),
+  join: (teamCode, eventId) => api.post('/teams/join', { team_code: teamCode, event_id: eventId }),
+  getMyTeam: (eventId) => api.get(`/teams/my-team/${eventId}`),
+  register: (teamId) => api.post(`/teams/${teamId}/register`),
+  leave: (teamId) => api.delete(`/teams/${teamId}/leave`),
+  delete: (teamId) => api.delete(`/teams/${teamId}`)
 };
 
 export default api;

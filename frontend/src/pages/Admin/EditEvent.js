@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import { eventsAPI, adminAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 
-const CreateEvent = () => {
+const EditEvent = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
+  const [event, setEvent] = useState(null);
   const [coordinators, setCoordinators] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
@@ -14,16 +16,45 @@ const CreateEvent = () => {
     date: '',
     venue: '',
     team_size: 1,
-    min_team_size: 1,
-    max_team_size: 1,
     total_prize: '',
     coordinator_ids: []
   });
   const [loading, setLoading] = useState(false);
+  const [coordinatorLoading, setCoordinatorLoading] = useState(false);
 
   useEffect(() => {
+    fetchEvent();
     fetchCoordinators();
-  }, []);
+  }, [id]);
+
+  const fetchEvent = async () => {
+    try {
+      const response = await eventsAPI.getById(id);
+      const eventData = response.data;
+      setEvent(eventData);
+      
+      // Format date for datetime-local input
+      const date = new Date(eventData.date);
+      const formattedDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 16);
+
+      setFormData({
+        title: eventData.title || '',
+        description: eventData.description || '',
+        about: eventData.about || '',
+        date: formattedDate,
+        venue: eventData.venue || '',
+        team_size: eventData.team_size || 1,
+        total_prize: eventData.total_prize || '',
+        coordinator_ids: eventData.coordinator_ids?.map(c => c._id || c) || []
+      });
+    } catch (error) {
+      toast.error('Failed to load event');
+      console.error(error);
+      navigate('/admin/dashboard');
+    }
+  };
 
   const fetchCoordinators = async () => {
     try {
@@ -57,48 +88,141 @@ const CreateEvent = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Validate min <= max
-    if (formData.min_team_size > formData.max_team_size) {
-      toast.error('Min team size cannot be greater than max team size');
-      setLoading(false);
-      return;
-    }
-
     try {
-      const submitData = {
-        title: formData.title,
-        description: formData.description,
-        about: formData.about,
-        date: formData.date,
-        venue: formData.venue,
-        min_team_size: formData.min_team_size,
-        max_team_size: formData.max_team_size,
-        team_size: formData.max_team_size, // Set to max for backward compatibility
-        total_prize: formData.total_prize || 'N/A',
-        coordinator_ids: formData.coordinator_ids.length > 0 ? formData.coordinator_ids : []
-      };
-      await eventsAPI.create(submitData);
-      toast.success('Event created successfully!');
+      await eventsAPI.update(id, formData);
+      toast.success('Event updated successfully!');
       navigate('/admin/dashboard');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create event');
+      toast.error(error.response?.data?.message || 'Failed to update event');
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleAssignCoordinators = async () => {
+    if (formData.coordinator_ids.length === 0) {
+      toast.error('Please select at least one coordinator');
+      return;
+    }
+
+    setCoordinatorLoading(true);
+    try {
+      await eventsAPI.reassignCoordinators(id, formData.coordinator_ids);
+      toast.success('Coordinators reassigned successfully!');
+      fetchEvent();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to reassign coordinators');
+      console.error(error);
+    } finally {
+      setCoordinatorLoading(false);
+    }
+  };
+
+  const handleRemoveCoordinator = async (coordinatorId) => {
+    if (!window.confirm('Are you sure you want to remove this coordinator?')) return;
+
+    try {
+      await eventsAPI.removeCoordinator(id, coordinatorId);
+      toast.success('Coordinator removed successfully!');
+      fetchEvent();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to remove coordinator');
+      console.error(error);
+    }
+  };
+
+  if (!event) {
+    return (
+      <div>
+        <Navbar />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading event...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <Navbar />
       <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Create Event</h1>
-            <p className="mt-2 text-gray-600">Create a new event</p>
+            <h1 className="text-3xl font-bold text-gray-900">Edit Event</h1>
+            <p className="mt-2 text-gray-600">Update event details and manage coordinators</p>
           </div>
 
+          {/* Coordinator Management Section */}
+          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 className="text-xl font-semibold mb-4">Manage Coordinators</h2>
+            
+            {/* Current Coordinators */}
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Current Coordinators</h3>
+              {event.coordinator_ids && event.coordinator_ids.length > 0 ? (
+                <div className="space-y-2">
+                  {event.coordinator_ids.map((coordinator) => (
+                    <div key={coordinator._id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                      <div>
+                        <p className="font-semibold">{coordinator.name}</p>
+                        <p className="text-sm text-gray-600">📧 {coordinator.email}</p>
+                        {coordinator.mobile && (
+                          <p className="text-sm text-gray-600">📱 {coordinator.mobile}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleRemoveCoordinator(coordinator._id)}
+                        className="text-red-600 hover:text-red-800 text-sm font-medium"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No coordinators assigned</p>
+              )}
+            </div>
+
+            {/* Assign/Reassign Coordinators */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Assign/Reassign Coordinators</h3>
+              {coordinators.length === 0 ? (
+                <p className="text-sm text-gray-500">No coordinators available</p>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3 mb-4">
+                  {coordinators.map((coordinator) => (
+                    <label key={coordinator._id} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.coordinator_ids.includes(coordinator._id)}
+                        onChange={() => handleCoordinatorChange(coordinator._id)}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm">
+                        {coordinator.name} ({coordinator.email})
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={handleAssignCoordinators}
+                disabled={coordinatorLoading}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 text-sm"
+              >
+                {coordinatorLoading ? 'Updating...' : 'Reassign Coordinators'}
+              </button>
+            </div>
+          </div>
+
+          {/* Event Details Form */}
           <div className="bg-white p-8 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-6">Event Details</h2>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700">
@@ -127,7 +251,6 @@ const CreateEvent = () => {
                   value={formData.description}
                   onChange={handleChange}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Brief description of the event"
                 />
               </div>
 
@@ -143,7 +266,6 @@ const CreateEvent = () => {
                   value={formData.about}
                   onChange={handleChange}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Detailed information about the event"
                 />
               </div>
 
@@ -179,38 +301,10 @@ const CreateEvent = () => {
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <label htmlFor="min_team_size" className="block text-sm font-medium text-gray-700">
-                    Min Team Size
-                  </label>
-                  <input
-                    type="number"
-                    id="min_team_size"
-                    name="min_team_size"
-                    min="1"
-                    value={formData.min_team_size}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="max_team_size" className="block text-sm font-medium text-gray-700">
-                    Max Team Size
-                  </label>
-                  <input
-                    type="number"
-                    id="max_team_size"
-                    name="max_team_size"
-                    min="1"
-                    value={formData.max_team_size}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
+              <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="team_size" className="block text-sm font-medium text-gray-700">
-                    Team Size (Legacy)
+                    Team Size
                   </label>
                   <input
                     type="number"
@@ -220,9 +314,7 @@ const CreateEvent = () => {
                     value={formData.team_size}
                     onChange={handleChange}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Auto-set from max"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Will be set to max team size</p>
                 </div>
 
                 <div>
@@ -235,35 +327,9 @@ const CreateEvent = () => {
                     name="total_prize"
                     value={formData.total_prize}
                     onChange={handleChange}
-                    placeholder="e.g., ₹50,000 or N/A"
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Assign Coordinators (Optional)
-                </label>
-                {coordinators.length === 0 ? (
-                  <p className="text-sm text-gray-500">No coordinators available</p>
-                ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3">
-                    {coordinators.map((coordinator) => (
-                      <label key={coordinator._id} className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.coordinator_ids.includes(coordinator._id)}
-                          onChange={() => handleCoordinatorChange(coordinator._id)}
-                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <span className="text-sm">
-                          {coordinator.name} ({coordinator.email})
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <div className="flex space-x-4">
@@ -272,7 +338,7 @@ const CreateEvent = () => {
                   disabled={loading}
                   className="flex-1 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
                 >
-                  {loading ? 'Creating...' : 'Create Event'}
+                  {loading ? 'Updating...' : 'Update Event'}
                 </button>
                 <button
                   type="button"
@@ -290,5 +356,7 @@ const CreateEvent = () => {
   );
 };
 
-export default CreateEvent;
+export default EditEvent;
+
+
 

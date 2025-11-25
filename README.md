@@ -216,6 +216,10 @@ After running the seed script:
 - `MONGODB_URI` - MongoDB connection string
 - `JWT_SECRET` - Secret key for JWT tokens
 - `NODE_ENV` - Environment (development/production)
+- `EMAIL_HOST` - SMTP server host (default: smtp.gmail.com)
+- `EMAIL_PORT` - SMTP server port (default: 587)
+- `EMAIL_USER` - Email address for sending emails
+- `EMAIL_PASSWORD` - Email password or app password (for Gmail, use App Password)
 
 ### Frontend (.env)
 - `REACT_APP_API_URL` - Backend API URL (default: http://localhost:5000/api)

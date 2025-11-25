@@ -5,17 +5,17 @@ import { eventsAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 
 const EventList = () => {
-  const [mainEvents, setMainEvents] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchMainEvents();
+    fetchEvents();
   }, []);
 
-  const fetchMainEvents = async () => {
+  const fetchEvents = async () => {
     try {
-      const response = await eventsAPI.getAll({ main_event: null });
-      setMainEvents(response.data);
+      const response = await eventsAPI.getAll();
+      setEvents(response.data);
     } catch (error) {
       toast.error('Failed to load events');
       console.error(error);
@@ -48,13 +48,13 @@ const EventList = () => {
             <p className="mt-2 text-gray-600">Browse and enroll in symposium events</p>
           </div>
 
-          {mainEvents.length === 0 ? (
+          {events.length === 0 ? (
             <div className="bg-white p-8 rounded-lg shadow-md text-center">
               <p className="text-gray-600">No events available at the moment.</p>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mainEvents.map((event) => (
+              {events.map((event) => (
                 <div key={event._id} className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
                   <h3 className="text-xl font-bold mb-2">{event.title}</h3>
                   <p className="text-gray-600 mb-4 line-clamp-3">{event.description}</p>

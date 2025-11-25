@@ -11,18 +11,8 @@ const router = express.Router();
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const { main_event } = req.query;
-    let query = {};
-
-    if (main_event) {
-      query.main_event = main_event;
-    } else {
-      // If no main_event specified, get main events (where main_event is null)
-      query.main_event = null;
-    }
-
-    const events = await Event.find(query)
-      .populate('coordinator_id', 'name email')
+    const events = await Event.find()
+      .populate('coordinator_ids', 'name email mobile')
       .sort({ date: 1 });
 
     res.json(events);
@@ -38,7 +28,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const event = await Event.findById(req.params.id)
-      .populate('coordinator_id', 'name email mobile');
+      .populate('coordinator_ids', 'name email mobile');
 
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
@@ -51,30 +41,20 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// @route   GET /api/events/main/:mainEvent
-// @desc    Get sub-events under a main event
-// @access  Public
-router.get('/main/:mainEvent', async (req, res) => {
-  try {
-    const events = await Event.find({ main_event: req.params.mainEvent })
-      .populate('coordinator_id', 'name email')
-      .sort({ date: 1 });
-
-    res.json(events);
-  } catch (error) {
-    console.error('Get sub-events error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
-
 // @route   POST /api/events
-// @desc    Create main event (Admin only)
+// @desc    Create event (Admin only)
 // @access  Private (Admin)
 router.post('/', authenticate, authorize('admin'), [
   body('title').trim().notEmpty().withMessage('Title is required'),
   body('description').trim().notEmpty().withMessage('Description is required'),
-  body('date').isISO8601().withMessage('Valid date is required'),
-  body('venue').trim().notEmpty().withMessage('Venue is required')
+  body('about').trim().notEmpty().withMessage('About is required'),
+  body('date').notEmpty().withMessage('Date is required'),
+  body('venue').trim().notEmpty().withMessage('Venue is required'),
+  body('team_size').optional().isInt({ min: 1 }).withMessage('Team size must be at least 1'),
+  body('min_team_size').optional().isInt({ min: 1 }).withMessage('Min team size must be at least 1'),
+  body('max_team_size').optional().isInt({ min: 1 }).withMessage('Max team size must be at least 1'),
+  body('total_prize').optional().trim(),
+  body('coordinator_ids').optional().isArray().withMessage('Coordinator IDs must be an array')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -82,26 +62,107 @@ router.post('/', authenticate, authorize('admin'), [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { title, description, date, venue } = req.body;
+    const { title, description, about, date, venue, team_size, min_team_size, max_team_size, total_prize, coordinator_ids } = req.body;
+    
+    // Set default team sizes - if team_size is provided, use it for both min and max
+    // Otherwise use min_team_size and max_team_size
+    let finalTeamSize = team_size || 1;
+    let finalMinTeamSize = min_team_size || finalTeamSize;
+    let finalMaxTeamSize = max_team_size || finalTeamSize;
+    
+    // If only team_size is provided, use it for both min and max (backward compatibility)
+    if (team_size && !min_team_size && !max_team_size) {
+      finalMinTeamSize = team_size;
+      finalMaxTeamSize = team_size;
+    }
+    
+    // Validate min <= max
+    if (finalMinTeamSize > finalMaxTeamSize) {
+      return res.status(400).json({ message: 'Min team size cannot be greater than max team size' });
+    }
+    
+    // Convert datetime-local format to Date object
+    let eventDate;
+    try {
+      eventDate = new Date(date);
+      if (isNaN(eventDate.getTime())) {
+        return res.status(400).json({ message: 'Invalid date format' });
+      }
+    } catch (error) {
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
 
-    // Generate event_id
-    const count = await Event.countDocuments();
-    const event_id = `EVT${new Date().getFullYear()}_${String(count + 1).padStart(5, '0')}`;
+    // Verify coordinators exist and are coordinators
+    if (coordinator_ids && coordinator_ids.length > 0) {
+      const coordinators = await User.find({ _id: { $in: coordinator_ids } });
+      const invalidCoordinators = coordinators.filter(c => c.role !== 'coordinator');
+      if (invalidCoordinators.length > 0) {
+        return res.status(400).json({ message: 'One or more selected users are not coordinators' });
+      }
+      if (coordinators.length !== coordinator_ids.length) {
+        return res.status(400).json({ message: 'One or more coordinators not found' });
+      }
+    }
+
+    // Generate unique event_id
+    const year = new Date().getFullYear();
+    let event_id;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      // Find the highest event_id number for this year
+      const existingEvents = await Event.find({
+        event_id: new RegExp(`^EVT${year}_`)
+      }).sort({ event_id: -1 }).limit(1);
+      
+      let nextNumber = 1;
+      if (existingEvents.length > 0) {
+        const lastEventId = existingEvents[0].event_id;
+        const match = lastEventId.match(/EVT\d+_(\d+)/);
+        if (match) {
+          nextNumber = parseInt(match[1]) + 1;
+        }
+      }
+      
+      event_id = `EVT${year}_${String(nextNumber).padStart(5, '0')}`;
+      
+      // Check if this event_id already exists (race condition check)
+      const existing = await Event.findOne({ event_id });
+      if (!existing) {
+        break; // Unique ID found
+      }
+      
+      attempts++;
+      nextNumber++; // Try next number
+    }
+    
+    if (attempts >= maxAttempts) {
+      return res.status(500).json({ message: 'Failed to generate unique event ID. Please try again.' });
+    }
 
     const event = new Event({
       event_id,
-      main_event: null, // Main event
       title,
       description,
-      date,
-      venue
+      about,
+      date: eventDate,
+      venue,
+      team_size: finalMaxTeamSize, // Keep for backward compatibility
+      min_team_size: finalMinTeamSize,
+      max_team_size: finalMaxTeamSize,
+      total_prize: total_prize || 'N/A',
+      coordinator_ids: coordinator_ids || []
     });
 
     await event.save();
 
+    const populatedEvent = await Event.findById(event._id)
+      .populate('coordinator_ids', 'name email mobile');
+
     res.status(201).json({
-      message: 'Main event created successfully',
-      event
+      message: 'Event created successfully',
+      event: populatedEvent
     });
   } catch (error) {
     console.error('Create event error:', error);
@@ -109,16 +170,20 @@ router.post('/', authenticate, authorize('admin'), [
   }
 });
 
-// @route   POST /api/events/sub-events
-// @desc    Create sub-event (Admin only)
+// @route   PUT /api/events/:id
+// @desc    Update event (Admin only)
 // @access  Private (Admin)
-router.post('/sub-events', authenticate, authorize('admin'), [
-  body('main_event').trim().notEmpty().withMessage('Main event name is required'),
-  body('title').trim().notEmpty().withMessage('Title is required'),
-  body('description').trim().notEmpty().withMessage('Description is required'),
-  body('date').isISO8601().withMessage('Valid date is required'),
-  body('venue').trim().notEmpty().withMessage('Venue is required'),
-  body('coordinator_id').optional().isMongoId().withMessage('Invalid coordinator ID')
+router.put('/:id', authenticate, authorize('admin'), [
+  body('title').optional().trim().notEmpty().withMessage('Title cannot be empty'),
+  body('description').optional().trim().notEmpty().withMessage('Description cannot be empty'),
+  body('about').optional().trim().notEmpty().withMessage('About cannot be empty'),
+  body('date').optional().notEmpty().withMessage('Date is required'),
+  body('venue').optional().trim().notEmpty().withMessage('Venue cannot be empty'),
+  body('team_size').optional().isInt({ min: 1 }).withMessage('Team size must be at least 1'),
+  body('min_team_size').optional().isInt({ min: 1 }).withMessage('Min team size must be at least 1'),
+  body('max_team_size').optional().isInt({ min: 1 }).withMessage('Max team size must be at least 1'),
+  body('total_prize').optional().trim(),
+  body('coordinator_ids').optional().isArray().withMessage('Coordinator IDs must be an array')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -126,64 +191,77 @@ router.post('/sub-events', authenticate, authorize('admin'), [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { main_event, title, description, date, venue, coordinator_id } = req.body;
+    const { title, description, about, date, venue, team_size, min_team_size, max_team_size, total_prize, coordinator_ids } = req.body;
+    
+    // Handle date conversion if provided
+    let eventDate;
+    if (date) {
+      try {
+        eventDate = new Date(date);
+        if (isNaN(eventDate.getTime())) {
+          return res.status(400).json({ message: 'Invalid date format' });
+        }
+      } catch (error) {
+        return res.status(400).json({ message: 'Invalid date format' });
+      }
+    }
+    
+    // Handle team sizes
+    let finalMinTeamSize, finalMaxTeamSize;
+    if (min_team_size !== undefined || max_team_size !== undefined) {
+      finalMinTeamSize = min_team_size;
+      finalMaxTeamSize = max_team_size;
+    } else if (team_size !== undefined) {
+      finalMinTeamSize = team_size;
+      finalMaxTeamSize = team_size;
+    }
+    
+    // Validate min <= max if both are provided
+    if (finalMinTeamSize !== undefined && finalMaxTeamSize !== undefined && finalMinTeamSize > finalMaxTeamSize) {
+      return res.status(400).json({ message: 'Min team size cannot be greater than max team size' });
+    }
 
-    // Verify coordinator exists and is a coordinator
-    if (coordinator_id) {
-      const coordinator = await User.findById(coordinator_id);
-      if (!coordinator || coordinator.role !== 'coordinator') {
-        return res.status(400).json({ message: 'Invalid coordinator' });
+    // Verify coordinators if provided
+    if (coordinator_ids !== undefined) {
+      if (coordinator_ids.length > 0) {
+        const coordinators = await User.find({ _id: { $in: coordinator_ids } });
+        const invalidCoordinators = coordinators.filter(c => c.role !== 'coordinator');
+        if (invalidCoordinators.length > 0) {
+          return res.status(400).json({ message: 'One or more selected users are not coordinators' });
+        }
+        if (coordinators.length !== coordinator_ids.length) {
+          return res.status(400).json({ message: 'One or more coordinators not found' });
+        }
       }
     }
 
-    // Generate event_id
-    const count = await Event.countDocuments();
-    const event_id = `EVT${new Date().getFullYear()}_${String(count + 1).padStart(5, '0')}`;
-
-    const event = new Event({
-      event_id,
-      main_event,
-      title,
-      description,
-      date,
-      venue,
-      coordinator_id: coordinator_id || null
-    });
-
-    await event.save();
-
-    const populatedEvent = await Event.findById(event._id)
-      .populate('coordinator_id', 'name email');
-
-    res.status(201).json({
-      message: 'Sub-event created successfully',
-      event: populatedEvent
-    });
-  } catch (error) {
-    console.error('Create sub-event error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
-
-// @route   PUT /api/events/:id
-// @desc    Update event (Admin only)
-// @access  Private (Admin)
-router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
-  try {
-    const { title, description, date, venue, coordinator_id } = req.body;
-
-    if (coordinator_id) {
-      const coordinator = await User.findById(coordinator_id);
-      if (!coordinator || coordinator.role !== 'coordinator') {
-        return res.status(400).json({ message: 'Invalid coordinator' });
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (about !== undefined) updateData.about = about;
+    if (date !== undefined) updateData.date = eventDate;
+    if (venue !== undefined) updateData.venue = venue;
+    if (finalMinTeamSize !== undefined) updateData.min_team_size = finalMinTeamSize;
+    if (finalMaxTeamSize !== undefined) {
+      updateData.max_team_size = finalMaxTeamSize;
+      updateData.team_size = finalMaxTeamSize; // Keep for backward compatibility
+    } else if (team_size !== undefined) {
+      updateData.team_size = team_size;
+      if (finalMinTeamSize === undefined) {
+        updateData.min_team_size = team_size;
+      }
+      if (finalMaxTeamSize === undefined) {
+        updateData.max_team_size = team_size;
       }
     }
+    if (total_prize !== undefined) updateData.total_prize = total_prize;
+    if (coordinator_ids !== undefined) updateData.coordinator_ids = coordinator_ids;
 
     const event = await Event.findByIdAndUpdate(
       req.params.id,
-      { title, description, date, venue, coordinator_id },
+      updateData,
       { new: true, runValidators: true }
-    ).populate('coordinator_id', 'name email');
+    ).populate('coordinator_ids', 'name email mobile');
 
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
@@ -195,6 +273,137 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
     });
   } catch (error) {
     console.error('Update event error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// @route   POST /api/events/:id/coordinators
+// @desc    Assign coordinator(s) to event (Admin only)
+// @access  Private (Admin)
+router.post('/:id/coordinators', authenticate, authorize('admin'), [
+  body('coordinator_ids').isArray({ min: 1 }).withMessage('At least one coordinator ID is required'),
+  body('coordinator_ids.*').isMongoId().withMessage('Invalid coordinator ID')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { coordinator_ids } = req.body;
+    const event = await Event.findById(req.params.id);
+
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    // Verify coordinators exist and are coordinators
+    const coordinators = await User.find({ _id: { $in: coordinator_ids } });
+    const invalidCoordinators = coordinators.filter(c => c.role !== 'coordinator');
+    if (invalidCoordinators.length > 0) {
+      return res.status(400).json({ message: 'One or more selected users are not coordinators' });
+    }
+    if (coordinators.length !== coordinator_ids.length) {
+      return res.status(400).json({ message: 'One or more coordinators not found' });
+    }
+
+    // Add coordinators (avoid duplicates)
+    const existingIds = event.coordinator_ids.map(id => id.toString());
+    const newIds = coordinator_ids.filter(id => !existingIds.includes(id.toString()));
+    event.coordinator_ids = [...event.coordinator_ids, ...newIds];
+
+    await event.save();
+
+    const populatedEvent = await Event.findById(event._id)
+      .populate('coordinator_ids', 'name email mobile');
+
+    res.json({
+      message: 'Coordinator(s) assigned successfully',
+      event: populatedEvent
+    });
+  } catch (error) {
+    console.error('Assign coordinator error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// @route   PUT /api/events/:id/coordinators
+// @desc    Reassign coordinators for event (Admin only) - replaces all coordinators
+// @access  Private (Admin)
+router.put('/:id/coordinators', authenticate, authorize('admin'), [
+  body('coordinator_ids').isArray().withMessage('Coordinator IDs must be an array'),
+  body('coordinator_ids.*').optional().isMongoId().withMessage('Invalid coordinator ID')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { coordinator_ids } = req.body;
+    const event = await Event.findById(req.params.id);
+
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    // Verify coordinators if provided
+    if (coordinator_ids && coordinator_ids.length > 0) {
+      const coordinators = await User.find({ _id: { $in: coordinator_ids } });
+      const invalidCoordinators = coordinators.filter(c => c.role !== 'coordinator');
+      if (invalidCoordinators.length > 0) {
+        return res.status(400).json({ message: 'One or more selected users are not coordinators' });
+      }
+      if (coordinators.length !== coordinator_ids.length) {
+        return res.status(400).json({ message: 'One or more coordinators not found' });
+      }
+      event.coordinator_ids = coordinator_ids;
+    } else {
+      event.coordinator_ids = [];
+    }
+
+    await event.save();
+
+    const populatedEvent = await Event.findById(event._id)
+      .populate('coordinator_ids', 'name email mobile');
+
+    res.json({
+      message: 'Coordinators reassigned successfully',
+      event: populatedEvent
+    });
+  } catch (error) {
+    console.error('Reassign coordinator error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// @route   DELETE /api/events/:id/coordinators/:coordinatorId
+// @desc    Remove coordinator from event (Admin only)
+// @access  Private (Admin)
+router.delete('/:id/coordinators/:coordinatorId', authenticate, authorize('admin'), async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    // Remove coordinator from array
+    event.coordinator_ids = event.coordinator_ids.filter(
+      id => id.toString() !== req.params.coordinatorId
+    );
+
+    await event.save();
+
+    const populatedEvent = await Event.findById(event._id)
+      .populate('coordinator_ids', 'name email mobile');
+
+    res.json({
+      message: 'Coordinator removed successfully',
+      event: populatedEvent
+    });
+  } catch (error) {
+    console.error('Remove coordinator error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -218,5 +427,3 @@ router.delete('/:id', authenticate, authorize('admin'), async (req, res) => {
 });
 
 module.exports = router;
-
-

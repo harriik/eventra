@@ -3,12 +3,21 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { authenticate } = require('../middleware/auth');
+const { sendStudentIdEmail } = require('../utils/emailService');
 
 const router = express.Router();
 
 // Generate JWT token
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+};
+
+// Generate Student ID: STU2025_<5 digit number>
+const generateStudentId = async () => {
+  const year = new Date().getFullYear();
+  const studentCount = await User.countDocuments({ role: 'student', student_id: { $exists: true } });
+  const studentNumber = String(studentCount + 1).padStart(5, '0');
+  return `STU${year}_${studentNumber}`;
 };
 
 // @route   POST /api/auth/register
@@ -29,27 +38,70 @@ router.post('/register', [
     }
 
     const { name, email, password, mobile, college, role } = req.body;
+    const userRole = role || 'student';
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists with this email' });
+    let user = await User.findOne({ email });
+    
+    // Generate Student ID if registering as a student
+    let studentId = null;
+    if (userRole === 'student') {
+      if (user && user.student_id) {
+        // Keep existing student_id if user already has one
+        studentId = user.student_id;
+      } else {
+        // Generate new student_id
+        studentId = await generateStudentId();
+      }
     }
-
-    // Create new user
-    const user = new User({
-      name,
-      email,
-      password,
-      mobile,
-      college,
-      role: role || 'student'
-    });
-
-    await user.save();
+    
+    if (user) {
+      // If user exists, update their information (allows re-registration)
+      user.name = name;
+      user.password = password; // Will be hashed by pre-save hook
+      user.mobile = mobile;
+      user.college = college;
+      user.role = userRole;
+      if (userRole === 'student' && studentId) {
+        user.student_id = studentId;
+      }
+      user.created_at = new Date(); // Reset creation date
+      await user.save();
+    } else {
+      // Create new user
+      const userData = {
+        name,
+        email,
+        password,
+        mobile,
+        college,
+        role: userRole
+      };
+      if (userRole === 'student' && studentId) {
+        userData.student_id = studentId;
+      }
+      user = new User(userData);
+      await user.save();
+    }
 
     // Generate token
     const token = generateToken(user._id);
+
+    // Send Student ID email if user is a student and has a student_id
+    if (userRole === 'student' && studentId) {
+      // Send email asynchronously (don't wait for it to complete)
+      sendStudentIdEmail(user.email, user.name, studentId)
+        .then(result => {
+          if (result.success) {
+            console.log(`Student ID email sent successfully to ${user.email}`);
+          } else {
+            console.error(`Failed to send Student ID email to ${user.email}:`, result.error || result.message);
+          }
+        })
+        .catch(error => {
+          console.error(`Error sending Student ID email to ${user.email}:`, error);
+        });
+    }
 
     res.status(201).json({
       message: 'User registered successfully',
@@ -60,7 +112,8 @@ router.post('/register', [
         email: user.email,
         role: user.role,
         mobile: user.mobile,
-        college: user.college
+        college: user.college,
+        student_id: user.student_id || null
       }
     });
   } catch (error) {

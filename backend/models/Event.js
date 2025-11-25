@@ -6,10 +6,6 @@ const eventSchema = new mongoose.Schema({
     unique: true,
     required: true
   },
-  main_event: {
-    type: String,
-    default: null
-  },
   title: {
     type: String,
     required: true,
@@ -18,6 +14,31 @@ const eventSchema = new mongoose.Schema({
   description: {
     type: String,
     required: true,
+    trim: true
+  },
+  about: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  team_size: {
+    type: Number,
+    default: 1,
+    min: 1
+  },
+  min_team_size: {
+    type: Number,
+    default: 1,
+    min: 1
+  },
+  max_team_size: {
+    type: Number,
+    default: 1,
+    min: 1
+  },
+  total_prize: {
+    type: String,
+    default: 'N/A',
     trim: true
   },
   date: {
@@ -29,11 +50,10 @@ const eventSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  coordinator_id: {
+  coordinator_ids: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  },
+    ref: 'User'
+  }],
   created_at: {
     type: Date,
     default: Date.now

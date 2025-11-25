@@ -32,6 +32,36 @@ router.post('/', authenticate, authorize('student'), async (req, res) => {
       return res.status(404).json({ message: 'Event not found' });
     }
 
+    // Check if event requires team registration (check both old and new format)
+    const maxTeamSize = event.max_team_size || event.team_size || 1;
+    if (maxTeamSize > 1) {
+      // Check if user is part of a team for this event
+      const Team = require('../models/Team');
+      const userTeam = await Team.findOne({
+        event_id: event_id,
+        $or: [
+          { leader_id: req.user._id },
+          { member_ids: req.user._id }
+        ]
+      });
+
+      if (!userTeam) {
+        return res.status(400).json({ 
+          message: 'This event requires team registration. Please create or join a team first.',
+          requires_team: true,
+          team_size: event.team_size
+        });
+      }
+
+      // Check if team is registered
+      if (userTeam.status !== 'registered') {
+        return res.status(400).json({ 
+          message: 'Your team is not yet registered. The team leader needs to register the team.',
+          team_status: userTeam.status
+        });
+      }
+    }
+
     // Check if already registered
     const existingRegistration = await Registration.findOne({
       user_id: req.user._id,
@@ -126,8 +156,13 @@ router.get('/event/:eventId/participants', authenticate, authorize('coordinator'
     }
 
     // If coordinator, verify they are assigned to this event
-    if (req.user.role === 'coordinator' && event.coordinator_id?.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Access denied. You are not assigned to this event' });
+    if (req.user.role === 'coordinator') {
+      const isAssigned = event.coordinator_ids?.some(
+        coordId => coordId.toString() === req.user._id.toString()
+      );
+      if (!isAssigned) {
+        return res.status(403).json({ message: 'Access denied. You are not assigned to this event' });
+      }
     }
 
     const registrations = await Registration.find({ event_id: eventId })
@@ -182,7 +217,7 @@ router.get('/all', authenticate, authorize('admin'), async (req, res) => {
 
     const registrations = await Registration.find(query)
       .populate('user_id', 'name email mobile college')
-      .populate('event_id', 'title date venue main_event')
+      .populate('event_id', 'title date venue')
       .sort({ timestamp: -1 });
 
     // Filter by college if provided
