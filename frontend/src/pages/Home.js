@@ -23,81 +23,123 @@ const Home = () => {
   return (
     <div>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold text-gray-900 mb-4">
-              Welcome to EVENTRA
-            </h1>
-            <p className="text-xl text-gray-600 mb-8">
-              Multi-Role Symposium Event Management System
-            </p>
-            {isAuthenticated ? (
-              <Link
-                to={getDashboardPath()}
-                className="inline-block bg-indigo-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-indigo-700 transition"
-              >
-                Go to Dashboard
-              </Link>
-            ) : (
-              <div className="flex justify-center space-x-4">
-                <Link
-                  to="/student/register"
-                  className="inline-block bg-indigo-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-indigo-700 transition"
-                >
-                  Student Registration
-                </Link>
-                <Link
-                  to="/student/login"
-                  className="inline-block bg-white text-indigo-600 border-2 border-indigo-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-indigo-50 transition"
-                >
-                  Student Login
-                </Link>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          {/* Hero */}
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
+            <div>
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 text-xs font-semibold mb-4">
+                Smart Symposium Management · EVENTRA
+              </span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
+                Manage your
+                <span className="text-indigo-400"> Symposium </span>
+                with confidence.
+              </h1>
+              <p className="mt-4 text-lg text-slate-300 max-w-xl">
+                EVENTRA brings registrations, teams, coordinators, and reports into
+                one clean, role-based platform for your college events.
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-4">
+                {isAuthenticated ? (
+                  <Link
+                    to={getDashboardPath()}
+                    className="inline-flex items-center px-6 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-sm font-semibold shadow-lg shadow-indigo-500/25 transition"
+                  >
+                    Go to my dashboard
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      to="/student/register"
+                      className="inline-flex items-center px-6 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-sm font-semibold shadow-lg shadow-indigo-500/25 transition"
+                    >
+                      Get started as Student
+                    </Link>
+                    <Link
+                      to="/student/login"
+                      className="inline-flex items-center px-6 py-3 rounded-xl border border-slate-600 text-sm font-semibold hover:bg-slate-900/60 transition"
+                    >
+                      Student Login
+                    </Link>
+                  </>
+                )}
               </div>
-            )}
+            </div>
+
+            {/* Illustration / stats */}
+            <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-slate-800/60 rounded-2xl p-4">
+                  <p className="text-xs text-slate-400">Total Events</p>
+                  <p className="mt-2 text-2xl font-bold text-indigo-300">20+</p>
+                </div>
+                <div className="bg-slate-800/60 rounded-2xl p-4">
+                  <p className="text-xs text-slate-400">Participants</p>
+                  <p className="mt-2 text-2xl font-bold text-emerald-300">1500+</p>
+                </div>
+              </div>
+              <p className="text-sm text-slate-300">
+                Track enrollments, teams, and attendance in real time with a clean,
+                responsive interface for students, coordinators, and admins.
+              </p>
+            </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 mt-16">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="text-indigo-600 text-4xl mb-4">👨‍🎓</div>
-              <h3 className="text-xl font-bold mb-2">For Students</h3>
-              <p className="text-gray-600 mb-4">
-                Register for events, enroll in multiple symposiums, and track your participation.
-              </p>
-              <Link
-                to="/student/register"
-                className="text-indigo-600 font-semibold hover:underline"
-              >
-                Register Now →
-              </Link>
-            </div>
+          {/* Role-based cards */}
+          <div className="mt-16">
+            <h2 className="text-2xl font-semibold text-slate-100 mb-6">
+              Built for every role
+            </h2>
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Students */}
+              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/20 transition">
+                <div className="text-3xl mb-3">👨‍🎓</div>
+                <h3 className="text-lg font-semibold mb-2 text-slate-50">Students</h3>
+                <p className="text-sm text-slate-300 mb-4">
+                  Discover events, form teams, track participant IDs, and see your
+                  attendance history.
+                </p>
+                <Link
+                  to="/student/register"
+                  className="text-indigo-300 text-sm font-semibold hover:text-indigo-200"
+                >
+                  Register now →
+                </Link>
+              </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="text-indigo-600 text-4xl mb-4">👨‍💼</div>
-              <h3 className="text-xl font-bold mb-2">For Coordinators</h3>
-              <p className="text-gray-600 mb-4">
-                Manage event participants, mark attendance, and view attendance statistics.
-              </p>
-              <Link
-                to="/coordinator/login"
-                className="text-indigo-600 font-semibold hover:underline"
-              >
-                Coordinator Login →
-              </Link>
-            </div>
+              {/* Coordinators */}
+              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/20 transition">
+                <div className="text-3xl mb-3">🧑‍🏫</div>
+                <h3 className="text-lg font-semibold mb-2 text-slate-50">Coordinators</h3>
+                <p className="text-sm text-slate-300 mb-4">
+                  View assigned events, manage participant lists, and mark attendance
+                  with simple present/absent controls.
+                </p>
+                <Link
+                  to="/coordinator/login"
+                  className="text-indigo-300 text-sm font-semibold hover:text-indigo-200"
+                >
+                  Coordinator login →
+                </Link>
+              </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="text-indigo-600 text-4xl mb-4">👨‍💻</div>
-              <h3 className="text-xl font-bold mb-2">For Administrators</h3>
-              <p className="text-gray-600 mb-4">
-                Create events, manage registrations, and view comprehensive reports.
-              </p>
-              <Link
-                to="/admin/login"
-                className="text-indigo-600 font-semibold hover:underline"
-              >
-                Admin Login →
-              </Link>
+              {/* Admins */}
+              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/20 transition">
+                <div className="text-3xl mb-3">🛠️</div>
+                <h3 className="text-lg font-semibold mb-2 text-slate-50">Admins</h3>
+                <p className="text-sm text-slate-300 mb-4">
+                  Create events, assign coordinators, and monitor registrations and
+                  attendance with clear analytics.
+                </p>
+                <Link
+                  to="/admin/login"
+                  className="text-indigo-300 text-sm font-semibold hover:text-indigo-200"
+                >
+                  Admin login →
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -107,5 +149,3 @@ const Home = () => {
 };
 
 export default Home;
-
-

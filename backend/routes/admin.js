@@ -145,6 +145,55 @@ router.get('/events/stats', async (req, res) => {
   }
 });
 
+// @route   POST /api/admin/coordinators
+// @desc    Create a new coordinator with generated password
+// @access  Private (Admin)
+router.post('/coordinators', async (req, res) => {
+  try {
+    const { name, email, mobile, college, roll_no } = req.body;
+
+    if (!name || !email || !mobile || !college || !roll_no) {
+      return res.status(400).json({ message: 'Name, email, mobile, college and roll number are required' });
+    }
+
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ message: 'A user with this email already exists' });
+    }
+
+    // Generate a random password for coordinator
+    const rawPassword = `COORD-${Math.random().toString(36).slice(-8)}`;
+
+    const coordinator = new User({
+      name,
+      email,
+      password: rawPassword, // Will be hashed by pre-save hook
+      mobile,
+      college,
+      role: 'coordinator',
+      student_id: roll_no
+    });
+
+    await coordinator.save();
+
+    res.status(201).json({
+      message: 'Coordinator created successfully',
+      coordinator: {
+        id: coordinator._id,
+        name: coordinator.name,
+        email: coordinator.email,
+        mobile: coordinator.mobile,
+        college: coordinator.college,
+        roll_no: coordinator.student_id
+      },
+      generated_password: rawPassword
+    });
+  } catch (error) {
+    console.error('Create coordinator error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = router;
 
 

@@ -69,7 +69,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Quick Actions */}
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="grid md:grid-cols-4 gap-6 mb-8">
             <Link
               to="/admin/events/create"
               className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition text-center"
@@ -85,6 +85,14 @@ const AdminDashboard = () => {
               <div className="text-indigo-600 text-4xl mb-4">📅</div>
               <h3 className="text-xl font-bold mb-2">Create Sub-Event</h3>
               <p className="text-gray-600">Add a sub-event to a symposium</p>
+            </Link>
+            <Link
+              to="/admin/coordinators/new"
+              className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition text-center"
+            >
+              <div className="text-indigo-600 text-4xl mb-4">🧑‍🏫</div>
+              <h3 className="text-xl font-bold mb-2">Add Coordinator</h3>
+              <p className="text-gray-600">Create coordinator accounts with generated passwords</p>
             </Link>
             <Link
               to="/admin/participants"

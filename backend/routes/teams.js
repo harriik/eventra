@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Registration = require('../models/Registration');
 const Attendance = require('../models/Attendance');
 const { authenticate, authorize } = require('../middleware/auth');
+const { ensureUserParticipantId } = require('../utils/participantId');
 
 const router = express.Router();
 
@@ -282,22 +283,20 @@ router.post('/:teamId/register', authenticate, authorize('student'), async (req,
       return res.status(400).json({ message: 'One or more team members are already registered for this event' });
     }
 
-    // Generate participant ID for the team (shared by all members)
-    const year = new Date().getFullYear();
-    const registrationCount = await Registration.countDocuments();
-    const participant_id = `EVT${year}_${String(registrationCount + 1).padStart(5, '0')}`;
-
     // Register all team members
     const registrations = [];
     for (const userId of allMemberIds) {
       const registrationCount = await Registration.countDocuments();
       const registration_id = `REG${new Date().getFullYear()}_${String(registrationCount + 1).padStart(5, '0')}`;
 
+      // Ensure each user has a participant_id (per-user, reused across events)
+      const participant_id = await ensureUserParticipantId(userId);
+
       const registration = new Registration({
         registration_id,
         user_id: userId,
         event_id: event._id,
-        participant_id, // Same participant ID for all team members
+        participant_id,
         team_id: team._id
       });
 
@@ -329,7 +328,6 @@ router.post('/:teamId/register', authenticate, authorize('student'), async (req,
     res.json({
       message: 'Team registered successfully',
       team: populatedTeam,
-      participant_id,
       registrations_count: registrations.length
     });
   } catch (error) {

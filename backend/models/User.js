@@ -35,6 +35,13 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  // Unique participant ID used across multiple events
+  participant_id: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true
+  },
   student_id: {
     type: String,
     unique: true,

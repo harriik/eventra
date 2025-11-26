@@ -18,7 +18,7 @@ const registrationSchema = new mongoose.Schema({
   },
   participant_id: {
     type: String,
-    unique: true,
+    // Same participant ID can be reused across events for a user
     required: true
   },
   team_id: {

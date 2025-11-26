@@ -55,7 +55,8 @@ export const attendanceAPI = {
 export const adminAPI = {
   getDashboard: () => api.get('/admin/dashboard'),
   getUsers: (params) => api.get('/admin/users', { params }),
-  getEventStats: () => api.get('/admin/events/stats')
+  getEventStats: () => api.get('/admin/events/stats'),
+  createCoordinator: (data) => api.post('/admin/coordinators', data)
 };
 
 // Teams API

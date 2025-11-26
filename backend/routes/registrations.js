@@ -3,17 +3,11 @@ const Registration = require('../models/Registration');
 const Event = require('../models/Event');
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
+const Team = require('../models/Team');
 const { authenticate, authorize } = require('../middleware/auth');
+const { ensureUserParticipantId } = require('../utils/participantId');
 
 const router = express.Router();
-
-// Generate participant ID: EVT2025_<5 digit number>
-const generateParticipantId = async () => {
-  const year = new Date().getFullYear();
-  const count = await Registration.countDocuments();
-  const participantNumber = String(count + 1).padStart(5, '0');
-  return `EVT${year}_${participantNumber}`;
-};
 
 // @route   POST /api/registrations
 // @desc    Enroll in an event (Student only)
@@ -72,8 +66,8 @@ router.post('/', authenticate, authorize('student'), async (req, res) => {
       return res.status(400).json({ message: 'Already registered for this event' });
     }
 
-    // Generate participant ID
-    const participant_id = await generateParticipantId();
+    // Get participant ID for this user (per-user, reused across events)
+    const participant_id = await ensureUserParticipantId(req.user._id);
 
     // Generate registration ID
     const registrationCount = await Registration.countDocuments();
@@ -128,9 +122,29 @@ router.get('/my-registrations', authenticate, authorize('student'), async (req, 
     const registrationsWithAttendance = await Promise.all(
       registrations.map(async (reg) => {
         const attendance = await Attendance.findOne({ registration_id: reg._id });
+
+        // If this registration belongs to a team, fetch basic team info + teammates
+        let teamInfo = null;
+        if (reg.team_id) {
+          const team = await Team.findById(reg.team_id)
+            .populate('leader_id', 'name')
+            .populate('member_ids', 'name');
+
+          if (team) {
+            const allMembers = [team.leader_id, ...team.member_ids].filter(Boolean);
+            teamInfo = {
+              team_name: team.team_name,
+              teammates: allMembers
+                .filter(m => m._id.toString() !== reg.user_id.toString())
+                .map(m => ({ id: m._id, name: m.name }))
+            };
+          }
+        }
+
         return {
           ...reg.toObject(),
-          attendance: attendance ? attendance.status : 'NotMarked'
+          attendance: attendance ? attendance.status : 'NotMarked',
+          team_info: teamInfo
         };
       })
     );
@@ -157,9 +171,17 @@ router.get('/event/:eventId/participants', authenticate, authorize('coordinator'
 
     // If coordinator, verify they are assigned to this event
     if (req.user.role === 'coordinator') {
-      const isAssigned = event.coordinator_ids?.some(
-        coordId => coordId.toString() === req.user._id.toString()
-      );
+      let isAssigned = false;
+
+      if (Array.isArray(event.coordinator_ids) && event.coordinator_ids.length > 0) {
+        isAssigned = event.coordinator_ids.some(
+          coordId => coordId.toString() === req.user._id.toString()
+        );
+      } else if (event.coordinator_id) {
+        const legacyId = event.coordinator_id._id || event.coordinator_id;
+        isAssigned = legacyId.toString() === req.user._id.toString();
+      }
+
       if (!isAssigned) {
         return res.status(403).json({ message: 'Access denied. You are not assigned to this event' });
       }

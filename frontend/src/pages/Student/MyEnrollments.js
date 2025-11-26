@@ -103,6 +103,31 @@ const MyEnrollments = () => {
                       </p>
                     </div>
                   </div>
+                  {registration.team_info && (
+                    <div className="mt-4 border-t pt-4">
+                      <p className="text-sm text-gray-500 mb-1">
+                        Team:{' '}
+                        <span className="font-semibold text-gray-900">
+                          {registration.team_info.team_name}
+                        </span>
+                      </p>
+                      {registration.team_info.teammates.length > 0 && (
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Teammates:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {registration.team_info.teammates.map((mate) => (
+                              <span
+                                key={mate.id}
+                                className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-xs font-medium text-indigo-700"
+                              >
+                                {mate.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

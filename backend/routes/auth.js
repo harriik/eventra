@@ -4,6 +4,7 @@ const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { authenticate } = require('../middleware/auth');
 const { sendStudentIdEmail } = require('../utils/emailService');
+const { generateParticipantIdForUser } = require('../utils/participantId');
 
 const router = express.Router();
 
@@ -45,6 +46,7 @@ router.post('/register', [
     
     // Generate Student ID if registering as a student
     let studentId = null;
+    let participantId = null;
     if (userRole === 'student') {
       if (user && user.student_id) {
         // Keep existing student_id if user already has one
@@ -52,6 +54,13 @@ router.post('/register', [
       } else {
         // Generate new student_id
         studentId = await generateStudentId();
+      }
+
+      // Participant ID is per-user and shared across events
+      if (user && user.participant_id) {
+        participantId = user.participant_id;
+      } else {
+        participantId = await generateParticipantIdForUser();
       }
     }
     
@@ -64,6 +73,9 @@ router.post('/register', [
       user.role = userRole;
       if (userRole === 'student' && studentId) {
         user.student_id = studentId;
+      }
+      if (userRole === 'student' && participantId) {
+        user.participant_id = participantId;
       }
       user.created_at = new Date(); // Reset creation date
       await user.save();
@@ -79,6 +91,9 @@ router.post('/register', [
       };
       if (userRole === 'student' && studentId) {
         userData.student_id = studentId;
+      }
+      if (userRole === 'student' && participantId) {
+        userData.participant_id = participantId;
       }
       user = new User(userData);
       await user.save();
@@ -113,7 +128,8 @@ router.post('/register', [
         role: user.role,
         mobile: user.mobile,
         college: user.college,
-        student_id: user.student_id || null
+        student_id: user.student_id || null,
+        participant_id: user.participant_id || null
       }
     });
   } catch (error) {

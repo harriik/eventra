@@ -26,9 +26,11 @@ import CreateEvent from './pages/Admin/CreateEvent';
 import EditEvent from './pages/Admin/EditEvent';
 import AdminParticipants from './pages/Admin/AdminParticipants';
 import AdminReports from './pages/Admin/AdminReports';
+import ManageCoordinators from './pages/Admin/ManageCoordinators';
 
 // Protected Route Component
 import ProtectedRoute from './components/ProtectedRoute';
+import Footer from './components/Footer';
 import Home from './pages/Home';
 
 function App() {
@@ -97,6 +99,10 @@ function App() {
               element={<ProtectedRoute requiredRole="admin"><AdminParticipants /></ProtectedRoute>}
             />
             <Route
+              path="/admin/coordinators/new"
+              element={<ProtectedRoute requiredRole="admin"><ManageCoordinators /></ProtectedRoute>}
+            />
+            <Route
               path="/admin/reports"
               element={<ProtectedRoute requiredRole="admin"><AdminReports /></ProtectedRoute>}
             />
@@ -104,6 +110,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <ToastContainer position="top-right" autoClose={3000} />
+          <Footer />
         </div>
       </Router>
     </AuthProvider>
