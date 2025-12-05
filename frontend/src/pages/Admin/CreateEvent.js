@@ -91,17 +91,20 @@ const CreateEvent = () => {
   return (
     <div>
       <Navbar />
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Create Event</h1>
-            <p className="mt-2 text-gray-600">Create a new event</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 py-10">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <div className="space-y-2">
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 text-xs font-semibold w-fit">
+              Admin · Events
+            </span>
+            <h1 className="text-3xl font-bold text-white">Create Event</h1>
+            <p className="text-slate-300 text-sm sm:text-base">Publish a new symposium or workshop.</p>
           </div>
 
-          <div className="bg-white p-8 rounded-lg shadow-md">
+          <div className="bg-slate-900/80 border border-slate-800 p-8 rounded-2xl shadow-lg">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="title" className="block text-sm font-medium text-slate-200">
                   Event Title *
                 </label>
                 <input
@@ -111,12 +114,12 @@ const CreateEvent = () => {
                   required
                   value={formData.title}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="mt-1 block w-full px-3 py-2 border border-slate-700 rounded-lg shadow-sm bg-slate-900/60 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="description" className="block text-sm font-medium text-slate-200">
                   Description *
                 </label>
                 <textarea
@@ -126,13 +129,13 @@ const CreateEvent = () => {
                   required
                   value={formData.description}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="mt-1 block w-full px-3 py-2 border border-slate-700 rounded-lg shadow-sm bg-slate-900/60 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Brief description of the event"
                 />
               </div>
 
               <div>
-                <label htmlFor="about" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="about" className="block text-sm font-medium text-slate-200">
                   About the Event *
                 </label>
                 <textarea
@@ -142,14 +145,14 @@ const CreateEvent = () => {
                   required
                   value={formData.about}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="mt-1 block w-full px-3 py-2 border border-slate-700 rounded-lg shadow-sm bg-slate-900/60 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Detailed information about the event"
                 />
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="date" className="block text-sm font-medium text-slate-200">
                     Date & Time *
                   </label>
                   <input
@@ -159,12 +162,12 @@ const CreateEvent = () => {
                     required
                     value={formData.date}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="mt-1 block w-full px-3 py-2 border border-slate-700 rounded-lg shadow-sm bg-slate-900/60 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="venue" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="venue" className="block text-sm font-medium text-slate-200">
                     Venue *
                   </label>
                   <input
@@ -174,14 +177,14 @@ const CreateEvent = () => {
                     required
                     value={formData.venue}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="mt-1 block w-full px-3 py-2 border border-slate-700 rounded-lg shadow-sm bg-slate-900/60 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               </div>
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label htmlFor="min_team_size" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="min_team_size" className="block text-sm font-medium text-slate-200">
                     Min Team Size
                   </label>
                   <input
@@ -191,11 +194,11 @@ const CreateEvent = () => {
                     min="1"
                     value={formData.min_team_size}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="mt-1 block w-full px-3 py-2 border border-slate-700 rounded-lg shadow-sm bg-slate-900/60 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
-                  <label htmlFor="max_team_size" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="max_team_size" className="block text-sm font-medium text-slate-200">
                     Max Team Size
                   </label>
                   <input
@@ -205,11 +208,11 @@ const CreateEvent = () => {
                     min="1"
                     value={formData.max_team_size}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="mt-1 block w-full px-3 py-2 border border-slate-700 rounded-lg shadow-sm bg-slate-900/60 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
-                  <label htmlFor="team_size" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="team_size" className="block text-sm font-medium text-slate-200">
                     Team Size (Legacy)
                   </label>
                   <input
@@ -219,14 +222,14 @@ const CreateEvent = () => {
                     min="1"
                     value={formData.team_size}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="mt-1 block w-full px-3 py-2 border border-slate-700 rounded-lg shadow-sm bg-slate-900/60 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     placeholder="Auto-set from max"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Will be set to max team size</p>
+                  <p className="text-xs text-slate-500 mt-1">Will be set to max team size</p>
                 </div>
 
                 <div>
-                  <label htmlFor="total_prize" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="total_prize" className="block text-sm font-medium text-slate-200">
                     Total Prize
                   </label>
                   <input
@@ -236,28 +239,28 @@ const CreateEvent = () => {
                     value={formData.total_prize}
                     onChange={handleChange}
                     placeholder="e.g., ₹50,000 or N/A"
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="mt-1 block w-full px-3 py-2 border border-slate-700 rounded-lg shadow-sm bg-slate-900/60 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-200 mb-2">
                   Assign Coordinators (Optional)
                 </label>
                 {coordinators.length === 0 ? (
-                  <p className="text-sm text-gray-500">No coordinators available</p>
+                  <p className="text-sm text-slate-400">No coordinators available</p>
                 ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3">
+                  <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-700 rounded-lg p-3 bg-slate-900/60">
                     {coordinators.map((coordinator) => (
                       <label key={coordinator._id} className="flex items-center space-x-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={formData.coordinator_ids.includes(coordinator._id)}
                           onChange={() => handleCoordinatorChange(coordinator._id)}
-                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          className="rounded border-slate-600 bg-slate-900 text-indigo-500 focus:ring-indigo-500"
                         />
-                        <span className="text-sm">
+                        <span className="text-sm text-slate-200">
                           {coordinator.name} ({coordinator.email})
                         </span>
                       </label>
@@ -270,14 +273,14 @@ const CreateEvent = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
+                  className="flex-1 bg-indigo-500 text-white px-6 py-3 rounded-xl hover:bg-indigo-400 transition disabled:opacity-60 shadow-lg shadow-indigo-500/20 text-sm font-semibold"
                 >
                   {loading ? 'Creating...' : 'Create Event'}
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate('/admin/dashboard')}
-                  className="flex-1 bg-gray-200 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-300 transition"
+                  className="flex-1 bg-slate-800 text-slate-100 px-6 py-3 rounded-xl hover:bg-slate-700 transition border border-slate-700 text-sm font-semibold"
                 >
                   Cancel
                 </button>
