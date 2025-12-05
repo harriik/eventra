@@ -108,17 +108,17 @@ async function seed() {
     const mainEvents = [
       {
         event_id: 'EVT2025_00001',
-        main_event: null,
         title: 'Tech Symposium 2025',
         description: 'Annual technology symposium featuring cutting-edge innovations',
+        about: 'A full-day flagship symposium covering engineering, tech talks, and workshops.',
         date: new Date('2025-06-15'),
         venue: 'Main Auditorium'
       },
       {
         event_id: 'EVT2025_00002',
-        main_event: null,
         title: 'Science Fair 2025',
         description: 'Inter-college science exhibition and competition',
+        about: 'Hands-on exhibits, competitions, and seminars across core science disciplines.',
         date: new Date('2025-07-20'),
         venue: 'Science Block'
       }
@@ -133,58 +133,7 @@ async function seed() {
       }
     }
 
-    // Get coordinators for assignment
-    const coordinator1 = await User.findOne({ email: 'coordinator1@eventra.com' });
-    const coordinator2 = await User.findOne({ email: 'coordinator2@eventra.com' });
-
-    // Create sub-events
-    const subEvents = [
-      {
-        event_id: 'EVT2025_00003',
-        main_event: 'Tech Symposium 2025',
-        title: 'Web Development Workshop',
-        description: 'Hands-on workshop on modern web development',
-        date: new Date('2025-06-15T10:00:00'),
-        venue: 'Computer Lab 1',
-        coordinator_id: coordinator1 ? coordinator1._id : null
-      },
-      {
-        event_id: 'EVT2025_00004',
-        main_event: 'Tech Symposium 2025',
-        title: 'AI & Machine Learning Seminar',
-        description: 'Introduction to AI and ML technologies',
-        date: new Date('2025-06-15T14:00:00'),
-        venue: 'Conference Hall',
-        coordinator_id: coordinator1 ? coordinator1._id : null
-      },
-      {
-        event_id: 'EVT2025_00005',
-        main_event: 'Science Fair 2025',
-        title: 'Physics Exhibition',
-        description: 'Showcase of physics projects and experiments',
-        date: new Date('2025-07-20T09:00:00'),
-        venue: 'Physics Lab',
-        coordinator_id: coordinator2 ? coordinator2._id : null
-      },
-      {
-        event_id: 'EVT2025_00006',
-        main_event: 'Science Fair 2025',
-        title: 'Chemistry Competition',
-        description: 'Inter-college chemistry quiz and lab competition',
-        date: new Date('2025-07-20T13:00:00'),
-        venue: 'Chemistry Lab',
-        coordinator_id: coordinator2 ? coordinator2._id : null
-      }
-    ];
-
-    for (const eventData of subEvents) {
-      const eventExists = await Event.findOne({ event_id: eventData.event_id });
-      if (!eventExists) {
-        const event = new Event(eventData);
-        await event.save();
-        console.log(`✅ Sub-event created: ${eventData.title}`);
-      }
-    }
+    // Sub-events removed from data model; no seeding required.
 
     // Create sample colleges
     const colleges = [

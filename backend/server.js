@@ -32,7 +32,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/eventra', {
+mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://a:a@cluster0.ebov5r5.mongodb.net/?appName=Cluster0', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })

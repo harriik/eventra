@@ -11,7 +11,10 @@ const router = express.Router();
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const events = await Event.find()
+    const { coordinatorId } = req.query;
+    const filter = coordinatorId ? { coordinator_ids: coordinatorId } : {};
+
+    const events = await Event.find(filter)
       .populate('coordinator_ids', 'name email mobile')
       .sort({ date: 1 });
 
