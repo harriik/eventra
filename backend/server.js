@@ -39,29 +39,53 @@ app.get('/api/health', (req, res) => {
 // MongoDB Connection
 const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/eventra';
 
-mongoose.connect(mongoURI, {
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
-})
+mongoose.connect(mongoURI)
 .then(() => {
   console.log('✅ MongoDB connected successfully');
   console.log(`📊 Database: ${mongoURI.split('@')[1]?.split('?')[0] || 'eventra'}`);
 })
 .catch((err) => {
   console.error('❌ MongoDB connection error:', err.message);
-  console.error('\n⚠️  CRITICAL: Database not connected!');
+  console.error('\n⚠️  WARNING: Database not connected!');
   console.error('\nTroubleshooting:');
   console.error('1. MongoDB Atlas: Whitelist your IP (0.0.0.0/0 for testing)');
   console.error('2. Verify username/password in MONGODB_URI');
   console.error('3. Check network connectivity');
-  process.exit(1);
+  console.error('\nServer will continue running but database operations will fail.');
 });
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 Access at: http://localhost:${PORT}`);
 });
+
+// Handle server errors
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use`);
+    console.error('Try: killall node (Mac/Linux) or taskkill /F /IM node.exe (Windows)');
+    process.exit(1);
+  } else {
+    console.error('❌ Server error:', error);
+    process.exit(1);
+  }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('\n🛑 SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    mongoose.connection.close(false, () => {
+      console.log('✅ MongoDB connection closed');
+      process.exit(0);
+    });
+  });
+});
+
+module.exports = app;
 
 

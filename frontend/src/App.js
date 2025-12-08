@@ -26,7 +26,6 @@ import CreateEvent from './pages/Admin/CreateEvent';
 import EditEvent from './pages/Admin/EditEvent';
 import AdminParticipants from './pages/Admin/AdminParticipants';
 import AdminReports from './pages/Admin/AdminReports';
-import ManageCoordinators from './pages/Admin/ManageCoordinators';
 
 // Protected Route Component
 import ProtectedRoute from './components/ProtectedRoute';
@@ -37,7 +36,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="min-h-screen bg-slate-950">
+        <div className="min-h-screen bg-gray-50">
           <Routes>
             <Route path="/" element={<Home />} />
             
@@ -101,10 +100,6 @@ function App() {
             <Route
               path="/admin/reports"
               element={<ProtectedRoute requiredRole="admin"><AdminReports /></ProtectedRoute>}
-            />
-            <Route
-              path="/admin/coordinators/new"
-              element={<ProtectedRoute requiredRole="admin"><ManageCoordinators /></ProtectedRoute>}
             />
             
             <Route path="*" element={<Navigate to="/" replace />} />
