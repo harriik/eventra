@@ -57,6 +57,15 @@ const CreateEvent = () => {
     e.preventDefault();
     setLoading(true);
 
+    // Validate date is not in the past
+    const selectedDate = new Date(formData.date);
+    const now = new Date();
+    if (selectedDate < now) {
+      toast.error('Event date cannot be in the past');
+      setLoading(false);
+      return;
+    }
+
     // Validate min <= max
     if (formData.min_team_size > formData.max_team_size) {
       toast.error('Min team size cannot be greater than max team size');
@@ -160,6 +169,7 @@ const CreateEvent = () => {
                     id="date"
                     name="date"
                     required
+                    min={new Date().toISOString().slice(0, 16)}
                     value={formData.date}
                     onChange={handleChange}
                     className="mt-1 block w-full px-3 py-2 border border-slate-700 rounded-lg shadow-sm bg-slate-900/60 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"

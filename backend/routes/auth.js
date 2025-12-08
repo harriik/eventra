@@ -143,7 +143,8 @@ router.post('/register', [
 // @access  Public
 router.post('/login', [
   body('email').isEmail().withMessage('Please enter a valid email'),
-  body('password').notEmpty().withMessage('Password is required')
+  body('password').notEmpty().withMessage('Password is required'),
+  body('role').optional().isIn(['student', 'coordinator', 'admin']).withMessage('Invalid role')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -151,23 +152,37 @@ router.post('/login', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
+    console.log('Login attempt for:', email);
 
     // Find user
     const user = await User.findOne({ email });
     if (!user) {
+      console.log('User not found:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // Check if role matches (if role is provided)
+    if (role && user.role !== role) {
+      console.log(`Role mismatch: expected ${role}, got ${user.role}`);
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    console.log('User found, checking password...');
+    
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      console.log('Password mismatch for:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    console.log('Password matched, generating token...');
+    
     // Generate token
     const token = generateToken(user._id);
 
+    console.log('Login successful for:', email);
     res.json({
       message: 'Login successful',
       token,
@@ -181,7 +196,8 @@ router.post('/login', [
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ message: 'Server error during login', error: error.message });
   }
 });

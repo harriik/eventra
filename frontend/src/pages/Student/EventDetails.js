@@ -19,10 +19,21 @@ const EventDetails = () => {
   const [teamCode, setTeamCode] = useState('');
   const [creatingTeam, setCreatingTeam] = useState(false);
   const [joiningTeam, setJoiningTeam] = useState(false);
+  const [availableTeams, setAvailableTeams] = useState([]);
+  const [showAvailableTeams, setShowAvailableTeams] = useState(false);
 
   useEffect(() => {
     fetchEventDetails();
   }, [id]);
+
+  const fetchAvailableTeams = async () => {
+    try {
+      const response = await teamsAPI.getAvailableTeams(id);
+      setAvailableTeams(response.data);
+    } catch (error) {
+      console.error('Failed to load available teams:', error);
+    }
+  };
 
   const fetchEventDetails = async () => {
     try {
@@ -35,8 +46,9 @@ const EventDetails = () => {
           const teamResponse = await teamsAPI.getMyTeam(id);
           setTeam(teamResponse.data);
         } catch (error) {
-          // User is not in a team, which is fine
+          // User is not in a team, fetch available teams
           setTeam(null);
+          fetchAvailableTeams();
         }
       }
     } catch (error) {
@@ -99,10 +111,25 @@ const EventDetails = () => {
 
     setJoiningTeam(true);
     try {
-      const response = await teamsAPI.join(teamCode.toUpperCase(), id);
+      const response = await teamsAPI.join(teamCode.toUpperCase(), id, null);
       setTeam(response.data.team);
       setShowJoinTeam(false);
       setTeamCode('');
+      toast.success('Successfully joined the team!');
+      fetchEventDetails();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to join team');
+    } finally {
+      setJoiningTeam(false);
+    }
+  };
+
+  const handleJoinTeamById = async (teamId) => {
+    setJoiningTeam(true);
+    try {
+      const response = await teamsAPI.join(null, id, teamId);
+      setTeam(response.data.team);
+      setShowAvailableTeams(false);
       toast.success('Successfully joined the team!');
       fetchEventDetails();
     } catch (error) {
@@ -271,6 +298,7 @@ const EventDetails = () => {
                           onClick={() => {
                             setShowCreateTeam(true);
                             setShowJoinTeam(false);
+                            setShowAvailableTeams(false);
                           }}
                           className="bg-indigo-500 text-white px-4 py-2 rounded-xl hover:bg-indigo-400 transition text-sm font-semibold shadow-md shadow-indigo-500/20"
                         >
@@ -278,12 +306,24 @@ const EventDetails = () => {
                         </button>
                         <button
                           onClick={() => {
-                            setShowJoinTeam(true);
+                            setShowAvailableTeams(true);
+                            setShowJoinTeam(false);
                             setShowCreateTeam(false);
+                            fetchAvailableTeams();
                           }}
                           className="bg-emerald-500 text-white px-4 py-2 rounded-xl hover:bg-emerald-400 transition text-sm font-semibold shadow-md shadow-emerald-500/20"
                         >
-                          Join Team
+                          Browse Teams
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowJoinTeam(true);
+                            setShowCreateTeam(false);
+                            setShowAvailableTeams(false);
+                          }}
+                          className="bg-slate-700 text-white px-4 py-2 rounded-xl hover:bg-slate-600 transition text-sm font-semibold"
+                        >
+                          Enter Code
                         </button>
                       </div>
                     </div>
@@ -322,6 +362,42 @@ const EventDetails = () => {
                             </button>
                           </div>
                         </form>
+                      </div>
+                    )}
+
+                    {showAvailableTeams && (
+                      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                        <h3 className="font-semibold text-white mb-3">Available Teams</h3>
+                        {availableTeams.length === 0 ? (
+                          <p className="text-slate-400 text-sm">No teams with available slots found.</p>
+                        ) : (
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {availableTeams.map((availTeam) => (
+                              <div key={availTeam._id} className="bg-slate-800 border border-slate-700 rounded-lg p-3 flex justify-between items-center">
+                                <div>
+                                  <p className="font-semibold text-slate-100">{availTeam.team_name}</p>
+                                  <p className="text-xs text-slate-400">Leader: {availTeam.leader_id.name}</p>
+                                  <p className="text-xs text-slate-400">
+                                    {availTeam.current_size}/{availTeam.max_size} members · {availTeam.slots_available} slot{availTeam.slots_available > 1 ? 's' : ''} available
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => handleJoinTeamById(availTeam._id)}
+                                  disabled={joiningTeam}
+                                  className="bg-emerald-500 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-400 transition disabled:opacity-60 text-sm font-semibold"
+                                >
+                                  Join
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <button
+                          onClick={() => setShowAvailableTeams(false)}
+                          className="mt-3 bg-slate-800 text-slate-100 px-4 py-2 rounded-xl hover:bg-slate-700 transition border border-slate-700 text-sm font-semibold"
+                        >
+                          Close
+                        </button>
                       </div>
                     )}
 

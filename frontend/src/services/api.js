@@ -62,8 +62,9 @@ export const adminAPI = {
 // Teams API
 export const teamsAPI = {
   create: (teamData) => api.post('/teams', teamData),
-  join: (teamCode, eventId) => api.post('/teams/join', { team_code: teamCode, event_id: eventId }),
+  join: (teamCode, eventId, teamId = null) => api.post('/teams/join', { team_code: teamCode, team_id: teamId, event_id: eventId }),
   getMyTeam: (eventId) => api.get(`/teams/my-team/${eventId}`),
+  getAvailableTeams: (eventId) => api.get(`/teams/available/${eventId}`),
   register: (teamId) => api.post(`/teams/${teamId}/register`),
   leave: (teamId) => api.delete(`/teams/${teamId}/leave`),
   delete: (teamId) => api.delete(`/teams/${teamId}`)

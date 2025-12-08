@@ -110,10 +110,9 @@ router.post('/', authenticate, authorize('student'), [
 });
 
 // @route   POST /api/teams/join
-// @desc    Join a team using team code
+// @desc    Join a team using team code or team ID
 // @access  Private (Student)
 router.post('/join', authenticate, authorize('student'), [
-  body('team_code').trim().notEmpty().withMessage('Team code is required'),
   body('event_id').isMongoId().withMessage('Valid event ID is required')
 ], async (req, res) => {
   try {
@@ -122,13 +121,22 @@ router.post('/join', authenticate, authorize('student'), [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { team_code, event_id } = req.body;
+    const { team_code, team_id, event_id } = req.body;
 
-    // Find team
-    const team = await Team.findOne({ 
-      team_code: team_code.toUpperCase(),
-      event_id 
-    }).populate('event_id');
+    if (!team_code && !team_id) {
+      return res.status(400).json({ message: 'Either team_code or team_id is required' });
+    }
+
+    // Find team by code or ID
+    let team;
+    if (team_id) {
+      team = await Team.findOne({ _id: team_id, event_id }).populate('event_id');
+    } else {
+      team = await Team.findOne({ 
+        team_code: team_code.toUpperCase(),
+        event_id 
+      }).populate('event_id');
+    }
 
     if (!team) {
       return res.status(404).json({ message: 'Team not found or invalid team code' });
@@ -199,6 +207,47 @@ router.post('/join', authenticate, authorize('student'), [
     });
   } catch (error) {
     console.error('Join team error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// @route   GET /api/teams/available/:eventId
+// @desc    Get available teams with free slots for an event
+// @access  Private (Student)
+router.get('/available/:eventId', authenticate, authorize('student'), async (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    const maxTeamSize = event.max_team_size || event.team_size || 3;
+
+    // Find teams that are not full and not registered
+    const teams = await Team.find({
+      event_id: eventId,
+      status: { $ne: 'registered' }
+    })
+      .populate('leader_id', 'name email college')
+      .populate('member_ids', 'name email college')
+      .populate('event_id', 'title');
+
+    // Filter teams with available slots
+    const availableTeams = teams.filter(team => {
+      const currentSize = 1 + team.member_ids.length;
+      return currentSize < maxTeamSize;
+    }).map(team => ({
+      ...team.toObject(),
+      current_size: 1 + team.member_ids.length,
+      max_size: maxTeamSize,
+      slots_available: maxTeamSize - (1 + team.member_ids.length)
+    }));
+
+    res.json(availableTeams);
+  } catch (error) {
+    console.error('Get available teams error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

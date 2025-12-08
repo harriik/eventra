@@ -14,7 +14,7 @@ const CoordinatorLogin = () => {
     e.preventDefault();
     setLoading(true);
 
-    const result = await login(email, password);
+    const result = await login(email, password, 'coordinator');
     if (result.success && result.user.role === 'coordinator') {
       navigate('/coordinator/dashboard');
     }

@@ -14,7 +14,7 @@ const StudentLogin = () => {
     e.preventDefault();
     setLoading(true);
 
-    const result = await login(email, password);
+    const result = await login(email, password, 'student');
     if (result.success && result.user.role === 'student') {
       navigate('/student/dashboard');
     }

@@ -32,15 +32,23 @@ app.get('/api/health', (req, res) => {
 });
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://a:a@cluster0.ebov5r5.mongodb.net/?appName=Cluster0', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/eventra';
+
+mongoose.connect(mongoURI, {
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
 })
 .then(() => {
-  console.log('MongoDB connected successfully');
+  console.log('✅ MongoDB connected successfully');
+  console.log(`📊 Database: ${mongoURI.split('@')[1]?.split('?')[0] || 'eventra'}`);
 })
 .catch((err) => {
-  console.error('MongoDB connection error:', err);
+  console.error('❌ MongoDB connection error:', err.message);
+  console.error('\n⚠️  CRITICAL: Database not connected!');
+  console.error('\nTroubleshooting:');
+  console.error('1. MongoDB Atlas: Whitelist your IP (0.0.0.0/0 for testing)');
+  console.error('2. Verify username/password in MONGODB_URI');
+  console.error('3. Check network connectivity');
   process.exit(1);
 });
 
