@@ -27,7 +27,7 @@ async function seed() {
       const admin = new User({
         name: 'Admin User',
         email: 'admin@eventra.com',
-        password: 'admin123',
+        password: 'Admin@123',
         role: 'admin',
         mobile: '9876543210',
         college: 'Eventra Admin'
@@ -43,7 +43,7 @@ async function seed() {
       {
         name: 'Coordinator One',
         email: 'coordinator1@eventra.com',
-        password: 'coord123',
+        password: 'Coord@123',
         role: 'coordinator',
         mobile: '9876543211',
         college: 'Tech College'
@@ -51,7 +51,7 @@ async function seed() {
       {
         name: 'Coordinator Two',
         email: 'coordinator2@eventra.com',
-        password: 'coord123',
+        password: 'Coord@123',
         role: 'coordinator',
         mobile: '9876543212',
         college: 'Science College'
@@ -72,7 +72,7 @@ async function seed() {
       {
         name: 'Student One',
         email: 'student1@eventra.com',
-        password: 'student123',
+        password: 'Student@123',
         role: 'student',
         mobile: '9876543221',
         college: 'Tech College'
@@ -80,7 +80,7 @@ async function seed() {
       {
         name: 'Student Two',
         email: 'student2@eventra.com',
-        password: 'student123',
+        password: 'Student@123',
         role: 'student',
         mobile: '9876543222',
         college: 'Science College'
@@ -88,7 +88,7 @@ async function seed() {
       {
         name: 'Student Three',
         email: 'student3@eventra.com',
-        password: 'student123',
+        password: 'Student@123',
         role: 'student',
         mobile: '9876543223',
         college: 'Arts College'
