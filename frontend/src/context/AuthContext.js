@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import axios from 'axios';
 import { toast } from 'react-toastify';
+import api from '../services/api';
 
 const AuthContext = createContext();
 
@@ -17,10 +17,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
-  // Set up axios interceptor
   useEffect(() => {
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       fetchUser();
     } else {
       setLoading(false);
@@ -29,13 +27,12 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUser = async () => {
     try {
-      const response = await axios.get('/api/auth/me');
+      const response = await api.get('/auth/me');
       setUser(response.data);
     } catch (error) {
       console.error('Error fetching user:', error);
       localStorage.removeItem('token');
       setToken(null);
-      delete axios.defaults.headers.common['Authorization'];
     } finally {
       setLoading(false);
     }
@@ -43,17 +40,17 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password, role = null) => {
     try {
-      const response = await axios.post('/api/auth/login', { email, password, role });
+      const response = await api.post('/auth/login', { email, password, role });
       const { token: newToken, user: userData } = response.data;
       
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(userData);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
       
       toast.success('Login successful!');
       return { success: true, user: userData };
     } catch (error) {
+      console.error('Login error:', error);
       const message = error.response?.data?.message || 'Login failed';
       toast.error(message);
       return { success: false, error: message };
@@ -62,13 +59,12 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await axios.post('/api/auth/register', userData);
+      const response = await api.post('/auth/register', userData);
       const { token: newToken, user: userDataResponse } = response.data;
       
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(userDataResponse);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
       
       toast.success('Registration successful!');
       return { success: true, user: userDataResponse };
@@ -83,7 +79,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
-    delete axios.defaults.headers.common['Authorization'];
     toast.info('Logged out successfully');
   };
 
@@ -101,5 +96,3 @@ export const AuthProvider = ({ children }) => {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
-
